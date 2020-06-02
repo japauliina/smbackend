@@ -1,8 +1,10 @@
 *~
 *.pyc
 __pycache__
+local_settings.py
 data/
 .idea
+.coverage
 venv_smbackend
 venv
 .env
