@@ -17,13 +17,13 @@ from services.models import (
     ServiceNode,
     Unit,
     UnitConnection,
-    UnitIdentifier,
     UnitServiceDetails,
 )
 from smbackend_turku.importers.utils import (
     get_localized_value,
     get_turku_resource,
     get_weekday_str,
+    handle_ptv_id,
     nl2br,
     set_syncher_object_field,
     set_syncher_tku_translated_field,
@@ -229,19 +229,7 @@ class UnitImporter:
 
     def _handle_ptv_id(self, obj, unit_data):
         ptv_id = unit_data.get("ptv_id")
-
-        if ptv_id:
-            created, _ = UnitIdentifier.objects.get_or_create(
-                namespace="ptv", value=ptv_id, unit=obj
-            )
-            if created:
-                obj._changed = True
-        else:
-            num_of_deleted, _ = UnitIdentifier.objects.filter(
-                namespace="ptv", unit=obj
-            ).delete()
-            if num_of_deleted:
-                obj._changed = True
+        handle_ptv_id(obj, ptv_id)
 
     def _handle_services_and_service_nodes(self, obj, unit_data):
         old_service_ids = set(obj.services.values_list("id", flat=True))

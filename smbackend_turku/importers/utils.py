@@ -6,8 +6,11 @@ import requests
 from django.conf import settings
 
 # TODO: Change to production endpoint when available
+from services.models import UnitIdentifier
+
 TURKU_BASE_URL = "https://digiaurajoki.turku.fi:9443/kuntapalvelut/api/v1/"
 ACCESSIBILITY_BASE_URL = "https://asiointi.hel.fi/kapaesteettomyys/api/v1/"
+PTV_BASE_URL = "https://api.palvelutietovaranto.suomi.fi/api/v11/"
 
 
 def clean_text(text, default=None):
@@ -84,6 +87,14 @@ def get_turku_resource(resource_name):
     url = "{}{}".format(TURKU_BASE_URL, resource_name)
     headers = get_turku_api_headers()
     return get_resource(url, headers)
+
+
+def get_ptv_resource(area_code):
+    url = "{}{}{}".format(PTV_BASE_URL, "ServiceChannel/list/area/Municipality/code/", area_code)
+    print("CALLING URL >>> ", url)
+    resp = requests.get(url)
+    assert resp.status_code == 200, "status code {}".format(resp.status_code)
+    return resp.json()
 
 
 def set_tku_translated_field(
@@ -178,3 +189,18 @@ def convert_code_to_int(code):
     if code:
         return int.from_bytes(code.encode(), "big")
     return None
+
+
+def handle_ptv_id(obj, ptv_id):
+    if ptv_id:
+        created, _ = UnitIdentifier.objects.get_or_create(
+            namespace="ptv", value=ptv_id, unit=obj
+        )
+        if created:
+            obj._changed = True
+    else:
+        num_of_deleted, _ = UnitIdentifier.objects.filter(
+            namespace="ptv", unit=obj
+        ).delete()
+        if num_of_deleted:
+            obj._changed = True
